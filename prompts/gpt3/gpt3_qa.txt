@@ -1,0 +1,19 @@
+I am a highly intelligent question answering bot. My goal is to answer the way a typical person might, even if this is not entirely accurate, in very brief answers.
+
+Q: How does rain help the plants?
+A: water them
+
+Q: Who was president of the United States in 1955?
+A: Eisenhower
+
+Q: What type of material is a bathroom made of?
+A: tile
+
+Q: Where were the 1992 Olympics held?
+A: Barcelona, Spain
+
+Q: What devices can be controlled by a universal remote?
+A: tvs
+
+Q: {} Be very concise, no ranges, no doubt.
+A:

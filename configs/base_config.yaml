@@ -1,0 +1,68 @@
+multiprocessing: False                              # Run the models and samples in parallel
+path_pretrained_models: './pretrained_models'       # Path to the pretrained models
+execute_code: False                                 # Execute the code after generating it. Only applies to main_batch
+
+dataset:                                            # Dataset configuration
+    data_path: 'data'                               # Dataset path
+    split: ''                                       # Dataset split. If '', it assumes there is only one split
+    max_samples: 100                                # Maximum number of samples to load
+    batch_size: 20                                  # Batch size
+    start_sample: 0                                 # Start sample index. Only used if max_samples is not None
+
+load_models:                                        # Which pretrained models to load
+    maskrcnn: False
+    clip: False
+    glip: True
+    owlvit: False
+    tcl: False
+    gpt3_qa: True
+    gpt3_general: True
+    depth: True
+    blip: True
+    saliency: False
+    xvlm: True
+    codex: True
+
+detect_thresholds:                                  # Thresholds for the models that perform detection
+    glip: 0.5
+    maskrcnn: 0.8
+    owlvit: 0.1
+ratio_box_area_to_image_area: 0.0                   # Any detected patch under this size will not be returned
+crop_larger_margin: True                            # Increase size of crop by 10% to include more context
+
+verify_property:                                    # Parameters for verify_property
+    model: xvlm                                     # Model to use for verify_property
+    thresh_clip: 0.6
+    thresh_tcl: 0.25
+    thresh_xvlm: 0.6
+
+best_match_model: xvlm                              # Which model to use for best_[image, text]_match
+
+gpt3:                                               # GPT-3 configuration
+    n_votes: 1                                      # Number of tries to use for GPT-3. Use with temperature > 0
+    qa_prompt: ./prompts/gpt3/gpt3_qa.txt
+    temperature: 0.                                 # Temperature for GPT-3. Almost deterministic if 0
+    model: text-davinci-003                         # Can replace with code-davinci-002 (which is free for now) but will have worse performance as it's meant for code
+
+codex:
+    temperature: 0.                                 # Temperature for Codex. (Almost) deterministic if 0
+    best_of: 1                                      # Number of tries to choose from. Use when temperature > 0
+    max_tokens: 512                                 # Maximum number of tokens to generate for Codex
+    prompt: ./prompts/api.prompt                    # Codex prompt file, which defines the API
+    model: code-davinci-002                         # Codex model to use. [code-davinci-002, gpt4]
+
+# Saving and loading parameters
+save: True                                          # Save the results to a file
+save_new_results: True                              # If False, overwrite the results file
+results_dir: ./results/                             # Directory to save the results
+use_cache: True                                     # Use cache for the models that support it (now, GPT-3)
+clear_cache: False                                  # Clear stored cache
+use_cached_codex: False                             # Use previously-computed Codex results
+cached_codex_path: ''                               # Path to the csv results file from which to load Codex results
+log_every: 20                                       # Log accuracy every n batches
+
+blip_half_precision: True                           # Use 8bit (Faster but slightly less accurate) for BLIP if True
+blip_v2_model_type: blip2-flan-t5-xxl               # Which model to use for BLIP-2
+
+use_fixed_code: False                               # Use a fixed code for all samples (do not generate with Codex)
+fixed_code_file: ./prompts/fixed_code/blip2.prompt  # Path to the fixed code file
