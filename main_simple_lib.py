@@ -1,5 +1,5 @@
 # General imports and variables, as well as config
-
+import ast
 import math
 import sys
 import time
@@ -28,7 +28,6 @@ from IPython.core.display import HTML
 
 cache = Memory('cache/' if config.use_cache else None, verbose=0)
 
-
 mp.set_start_method('spawn', force=True)
 from vision_processes import forward, finish_all_consumers  # This import loads all the models. May take a while
 from image_patch import *
@@ -38,6 +37,7 @@ from datasets.dataset import MyDataset
 console = Console(highlight=False, force_terminal=False)
 
 time_wait_between_lines = 0.5
+
 
 def inject_saver(code, show_intermediate_steps, syntax=None, time_wait_between_lines=None, console=None):
     injected_function_name = 'show_all'
@@ -62,9 +62,10 @@ def inject_saver(code, show_intermediate_steps, syntax=None, time_wait_between_l
             if show_intermediate_steps:
                 escape_thing = lambda x: x.replace("'", "\\'")
                 injection_string_format = \
-                    lambda thing: f"{indent}{injected_function_name}(lineno={n},value=({thing}),valuename='{escape_thing(thing)}'," \
-                                  f"fig=my_fig,console_in=console,time_wait_between_lines=time_wait_between_lines); " \
-                    f"CodexAtLine({n},syntax=syntax,time_wait_between_lines=time_wait_between_lines)"
+                    lambda \
+                        thing: f"{indent}{injected_function_name}(lineno={n},value=({thing}),valuename='{escape_thing(thing)}'," \
+                               f"fig=my_fig,console_in=console,time_wait_between_lines=time_wait_between_lines); " \
+                               f"CodexAtLine({n},syntax=syntax,time_wait_between_lines=time_wait_between_lines)"
             else:
                 injection_string_format = lambda thing: f"{indent}CodexAtLine({n},syntax=syntax," \
                                                         f"time_wait_between_lines=time_wait_between_lines)"
@@ -156,7 +157,7 @@ def get_thing_to_show_codetype(codeline):
 
     if isinstance(thing_to_show, list):
         thing_to_show = [thing if not (thing.strip().startswith("'") and thing.strip().endswith("'"))
-                            else thing.replace("'", '"') for thing in thing_to_show if thing is not None]
+                         else thing.replace("'", '"') for thing in thing_to_show if thing is not None]
     elif isinstance(thing_to_show, str):
         thing_to_show = thing_to_show if not (thing_to_show.strip().startswith("'") and
                                               thing_to_show.strip().endswith("'")) else thing_to_show.replace("'", '"')
@@ -186,8 +187,9 @@ def CodexAtLine(lineno, syntax, time_wait_between_lines=1.):
     time.sleep(time_wait_between_lines)
 
 
-def show_all(lineno, value, valuename, fig=None, usefig=True, disp=True, console_in=None, time_wait_between_lines=None, lastlineno=[-1]):
-    time.sleep(0.1) # to avoid race condition!
+def show_all(lineno, value, valuename, fig=None, usefig=True, disp=True, console_in=None, time_wait_between_lines=None,
+             lastlineno=[-1]):
+    time.sleep(0.1)  # to avoid race condition!
 
     if console_in is None:
         console_in = console
@@ -196,7 +198,7 @@ def show_all(lineno, value, valuename, fig=None, usefig=True, disp=True, console
 
     if lineno is not None and lineno != lastlineno[0]:
         console_in.rule(f"[bold]Line {lineno}[/bold]", style="chartreuse2")
-        lastlineno[0] = lineno # ugly hack
+        lastlineno[0] = lineno  # ugly hack
 
     if usefig:
         plt.clf()
@@ -211,18 +213,26 @@ def show_all(lineno, value, valuename, fig=None, usefig=True, disp=True, console
         if valuename:
             console_in.print(f'{rich_escape(valuename)} = ')
         show_one_image(thing_to_show.cropped_image, ax)
-    elif isinstance(thing_to_show, list):
+    elif isinstance(thing_to_show, list) or isinstance(thing_to_show, tuple):
         if len(thing_to_show) > 0:
             for i, thing in enumerate(thing_to_show):
-                disp_ = disp or i < len(thing_to_show)-1
+                disp_ = disp or i < len(thing_to_show) - 1
                 show_all(None, thing, f"{rich_escape(valuename)}[{i}]", fig=fig, disp=disp_)
+            return
+        else:
+            console_in.print(f"{rich_escape(valuename)} is empty")
+    elif isinstance(thing_to_show, dict):
+        if len(thing_to_show) > 0:
+            for i, (thing_k, thing_v) in enumerate(thing_to_show.items()):
+                disp_ = disp or i < len(thing_to_show) - 1
+                show_all(None, thing_v, f"{rich_escape(valuename)}['{thing_k}']", fig=fig, disp=disp_)
             return
         else:
             console_in.print(f"{rich_escape(valuename)} is empty")
     else:
         console_in.print(f"{rich_escape(valuename)} = {thing_to_show}")
         if time_wait_between_lines is not None:
-            time.sleep(time_wait_between_lines/2)
+            time.sleep(time_wait_between_lines / 2)
         return
 
     # display small
@@ -243,14 +253,15 @@ def load_image(path):
 
 
 def get_code(query):
-    show_intermediate_steps = True
     code = forward('codex', prompt=query, input_type="image")
     code = f'def execute_command(image, my_fig, time_wait_between_lines, syntax):' + code
     code_for_syntax = code.replace("(image, my_fig, time_wait_between_lines, syntax)", "(image)")
-
-    syntax = Syntax(code_for_syntax, "python", theme="monokai", line_numbers=True, start_line=0)
-    console.print(syntax)
-    return code, syntax
+    syntax_1 = Syntax(code_for_syntax, "python", theme="monokai", line_numbers=True, start_line=0)
+    console.print(syntax_1)
+    code = ast.unparse(ast.parse(code))
+    code_for_syntax_2 = code.replace("(image, my_fig, time_wait_between_lines, syntax)", "(image)")
+    syntax_2 = Syntax(code_for_syntax_2, "python", theme="monokai", line_numbers=True, start_line=0)
+    return code, syntax_2
 
 
 def execute_code(code, im, show_intermediate_steps=True):
@@ -261,9 +272,14 @@ def execute_code(code, im, show_intermediate_steps=True):
 
     with Live(Padding(syntax, 1), refresh_per_second=10, console=console, auto_refresh=True) as live:
         my_fig = plt.figure(figsize=(4, 4))
+        try:
+            exec(compile(code_line, 'Codex', 'exec'), globals())
+            result = execute_command(im, my_fig, time_wait_between_lines, syntax)  # The code is created in the exec()
+        except Exception as e:
+            print(f"Encountered error {e} when trying to run with visualizations. Trying from scratch.")
+            exec(compile(code, 'Codex', 'exec'), globals())
+            result = execute_command(im, my_fig, time_wait_between_lines, syntax)  # The code is created in the exec()
 
-        exec(compile(code_line, 'Codex', 'exec'), globals())
-        result = execute_command(im, my_fig, time_wait_between_lines, syntax)  # The code is created in the exec()
         plt.close(my_fig)
 
     f = None
@@ -277,7 +293,7 @@ def execute_code(code, im, show_intermediate_steps=True):
 
 
 def show_single_image(im):
-    im = Image.fromarray((im.detach().cpu().numpy().transpose(1,2,0)*255).astype("uint8"))
+    im = Image.fromarray((im.detach().cpu().numpy().transpose(1, 2, 0) * 255).astype("uint8"))
     im.copy()
     im.thumbnail((400, 400))
     display(im)

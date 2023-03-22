@@ -48,8 +48,8 @@ codex:
     temperature: 0.                                 # Temperature for Codex. (Almost) deterministic if 0
     best_of: 1                                      # Number of tries to choose from. Use when temperature > 0
     max_tokens: 512                                 # Maximum number of tokens to generate for Codex
-    prompt: ./prompts/api.prompt                    # Codex prompt file, which defines the API
-    model: code-davinci-002                         # Codex model to use. [code-davinci-002, gpt4]
+    prompt: ./prompts/api.prompt                    # Codex prompt file, which defines the API. If you use a Chat-based model (3.5/4) try ./prompts/chatapi.prompt (doesn't support video for now due to token limits)
+    model: code-davinci-002                         # Codex model to use. [code-davinci-002, gpt-3.5-turbo, gpt-4]
 
 # Saving and loading parameters
 save: True                                          # Save the results to a file

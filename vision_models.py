@@ -923,7 +923,8 @@ def codex_helper(extended_prompt):
         responses = [openai.ChatCompletion.create(
                 model=config.codex.model,
                 messages=[
-                    {"role": "system", "content": "You are a helpful assistant."},
+                    # {"role": "system", "content": "You are a helpful assistant."},
+                    {"role": "system", "content": "Only answer with a function starting def execute_command."},
                     {"role": "user", "content": prompt}
                 ],
                 temperature=config.codex.temperature,
@@ -960,7 +961,6 @@ def codex_helper(extended_prompt):
 
 
 class CodexModel(BaseModel):
-    # TODO add GPT-4 option
     name = 'codex'
     requires_gpu = False
     max_batch_size = 5
