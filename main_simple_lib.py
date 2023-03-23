@@ -217,7 +217,7 @@ def show_all(lineno, value, valuename, fig=None, usefig=True, disp=True, console
         if len(thing_to_show) > 0:
             for i, thing in enumerate(thing_to_show):
                 disp_ = disp or i < len(thing_to_show) - 1
-                show_all(None, thing, f"{rich_escape(valuename)}[{i}]", fig=fig, disp=disp_)
+                show_all(None, thing, f"{rich_escape(valuename)}[{i}]", fig=fig, disp=disp_, usefig=usefig)
             return
         else:
             console_in.print(f"{rich_escape(valuename)} is empty")
@@ -225,7 +225,7 @@ def show_all(lineno, value, valuename, fig=None, usefig=True, disp=True, console
         if len(thing_to_show) > 0:
             for i, (thing_k, thing_v) in enumerate(thing_to_show.items()):
                 disp_ = disp or i < len(thing_to_show) - 1
-                show_all(None, thing_v, f"{rich_escape(valuename)}['{thing_k}']", fig=fig, disp=disp_)
+                show_all(None, thing_v, f"{rich_escape(valuename)}['{thing_k}']", fig=fig, disp=disp_, usefig=usefig)
             return
         else:
             console_in.print(f"{rich_escape(valuename)} is empty")
@@ -282,9 +282,24 @@ def execute_code(code, im, show_intermediate_steps=True):
 
         plt.close(my_fig)
 
+    def is_not_fig(x):
+        if x is None:
+            return True
+        elif isinstance(x, str):
+            return True
+        elif isinstance(x, float):
+            return True
+        elif isinstance(x, int):
+            return True
+        elif isinstance(x, list) or isinstance(x, tuple):
+            return all([is_not_fig(xx) for xx in x])
+        elif isinstance(x, dict):
+            return all([is_not_fig(xx) for xx in x.values()])
+        return False
+
     f = None
     usefig = False
-    if not isinstance(result, str) and not isinstance(result, float) and not isinstance(result, int):
+    if not is_not_fig(result):
         f = plt.figure(figsize=(4, 4))
         usefig = True
 
