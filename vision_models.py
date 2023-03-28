@@ -936,7 +936,7 @@ def codex_helper(extended_prompt):
                 stop=["\n\n"],
                 )
                     for prompt in extended_prompt]
-        resp = [r['choices'][0]['message']['content'] for r in responses]
+        resp = [r['choices'][0]['message']['content'].replace("(image)", "(image, my_fig, time_wait_between_lines, syntax)") for r in responses]
 #         if len(resp) == 1:
 #             resp = resp[0]
     else:
