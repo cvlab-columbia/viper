@@ -15,6 +15,7 @@ After cloning:
 cd viper
 export PATH=/usr/local/cuda/bin:$PATH
 bash setup.sh  # This may take a while. Make sure the vipergpt environment is active
+conda activate vipergpt
 cd GLIP
 python setup.py clean --all build develop --user
 echo YOUR_OPENAI_API_KEY_HERE > api.key
