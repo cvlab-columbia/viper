@@ -932,13 +932,13 @@ def codex_helper(extended_prompt):
                 top_p = 1.,
                 frequency_penalty=0,
                 presence_penalty=0,
-                best_of=config.codex.best_of,
+#                 best_of=config.codex.best_of,
                 stop=["\n\n"],
                 )
                     for prompt in extended_prompt]
         resp = [r['choices'][0]['message']['content'] for r in responses]
-        if len(resp) == 1:
-            resp = resp[0]
+#         if len(resp) == 1:
+#             resp = resp[0]
     else:
         response = openai.Completion.create(
             model="code-davinci-002",
