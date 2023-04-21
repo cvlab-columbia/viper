@@ -17,6 +17,7 @@ export PATH=/usr/local/cuda/bin:$PATH
 bash setup.sh  # This may take a while. Make sure the vipergpt environment is active
 cd GLIP
 python setup.py clean --all build develop --user
+cd ..
 echo YOUR_OPENAI_API_KEY_HERE > api.key
 ```
 Then you can start exploring with the `main_simple.ipynb` notebook. For running on datasets instead of individual 
