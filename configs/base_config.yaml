@@ -49,7 +49,7 @@ codex:
     best_of: 1                                      # Number of tries to choose from. Use when temperature > 0
     max_tokens: 512                                 # Maximum number of tokens to generate for Codex
     prompt: ./prompts/chatapi.prompt                # Codex prompt file, which defines the API. (doesn't support video for now due to token limits)
-    model: gpt-3.5-turbo                            # Codex model to use. [gpt-3.5-turbo, gpt-4]. See openai.Model.list()
+    model: gpt-3.5-turbo                            # Codex model to use. [gpt-3.5-turbo, gpt-4]. See openai.Model.list() for available models
 
 # Saving and loading parameters
 save: True                                          # Save the results to a file
