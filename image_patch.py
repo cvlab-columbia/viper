@@ -141,6 +141,7 @@ class ImagePatch:
             if object_name == 'person':
                 object_name = 'people'  # GLIP does better at people than person
 
+            # all_object_coordinates = self.forward('object_detector', self.cropped_image)
             all_object_coordinates = self.forward('glip', self.cropped_image, object_name)
         if len(all_object_coordinates) == 0:
             return []
@@ -154,6 +155,7 @@ class ImagePatch:
             # if not mask.any():
             #     mask = all_areas == all_areas.max()  # At least return one element
             all_object_coordinates = all_object_coordinates[mask]
+
 
         return [self.crop(*coordinates) for coordinates in all_object_coordinates]
 

@@ -42,14 +42,14 @@ gpt3:                                               # GPT-3 configuration
     n_votes: 1                                      # Number of tries to use for GPT-3. Use with temperature > 0
     qa_prompt: ./prompts/gpt3/gpt3_qa.txt
     temperature: 0.                                 # Temperature for GPT-3. Almost deterministic if 0
-    model: text-davinci-003                         # Can replace with code-davinci-002 (which is free for now) but will have worse performance as it's meant for code
+    model: text-davinci-003                         # See openai.Model.list() for available models
 
 codex:
     temperature: 0.                                 # Temperature for Codex. (Almost) deterministic if 0
     best_of: 1                                      # Number of tries to choose from. Use when temperature > 0
     max_tokens: 512                                 # Maximum number of tokens to generate for Codex
-    prompt: ./prompts/api.prompt                    # Codex prompt file, which defines the API. If you use a Chat-based model (3.5/4) try ./prompts/chatapi.prompt (doesn't support video for now due to token limits)
-    model: code-davinci-002                         # Codex model to use. [code-davinci-002, gpt-3.5-turbo, gpt-4]
+    prompt: ./prompts/chatapi.prompt                # Codex prompt file, which defines the API. (doesn't support video for now due to token limits)
+    model: gpt-3.5-turbo                            # Codex model to use. [gpt-3.5-turbo, gpt-4]. See openai.Model.list()
 
 # Saving and loading parameters
 save: True                                          # Save the results to a file
@@ -60,6 +60,7 @@ clear_cache: False                                  # Clear stored cache
 use_cached_codex: False                             # Use previously-computed Codex results
 cached_codex_path: ''                               # Path to the csv results file from which to load Codex results
 log_every: 20                                       # Log accuracy every n batches
+wandb: False                                        # Use Weights and Biases
 
 blip_half_precision: True                           # Use 8bit (Faster but slightly less accurate) for BLIP if True
 blip_v2_model_type: blip2-flan-t5-xxl               # Which model to use for BLIP-2

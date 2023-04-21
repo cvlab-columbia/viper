@@ -6,3 +6,26 @@ dataset:
 blip_v2_model_type: blip2-flan-t5-xxl  # Change to blip2-flan-t5-xl for smaller GPUs
 blip_half_precision: True
 # Add more changes here, following the same format as base_config.yaml
+
+load_models:                                        # Which pretrained models to load
+    maskrcnn: False
+    clip: False
+    glip: False
+    owlvit: False
+    tcl: False
+    gpt3_qa: True
+    gpt3_general: True
+    depth: False
+    blip: False
+    saliency: False
+    xvlm: False
+    codex: True
+    object_detector: False
+
+# wandb: False
+# 
+
+# codex:
+#     model: gpt-3.5-turbo
+
+# execute_code: True

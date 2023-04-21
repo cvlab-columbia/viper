@@ -940,6 +940,7 @@ def codex_helper(extended_prompt):
 #         if len(resp) == 1:
 #             resp = resp[0]
     else:
+        warnings.warn('OpenAI Codex is deprecated. Please use GPT-4 or GPT-3.5-turbo.')
         response = openai.Completion.create(
             model="code-davinci-002",
             temperature=config.codex.temperature,
