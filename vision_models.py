@@ -1219,7 +1219,6 @@ class XVLMModel(BaseModel):
         }
         with warnings.catch_warnings(), HiddenPrints("XVLM"):
             model = XVLMBase(config_xvlm, use_contrastive_loss=True, vision_config=vision_config)
-
             checkpoint = torch.load(path_checkpoint, map_location='cpu')
             state_dict = checkpoint['model'] if 'model' in checkpoint.keys() else checkpoint
             msg = model.load_state_dict(state_dict, strict=False)

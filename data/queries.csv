@@ -1,2 +1,3 @@
-index,sample_id,possible_answers,query_type,info_to_prompt,query,answer,image_name,img,
-0,0,How many cookies are there?,seven,,How many cookies are there?,seven,cookies.png,cookies.png
+index,sample_id,possible_answers,query_type,query,answer,image_name
+0,0,purple,,What color do you get if you combine the colors of the viper and the flower?,purple,viper_flower.png
+0,0,,,Tell me about the competition between the two skyscrapers in the image.,,skyscrapers.png

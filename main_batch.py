@@ -167,7 +167,6 @@ def main():
                 # TODO compute Codex for next batch as current batch is being processed
 
                 if not config.use_cached_codex:
-                    # codes = codex(prompt=batch['info_to_qprompt'], base_prompt=base_prompt)
                     codes = codex(prompt=batch['query'], base_prompt=base_prompt)
 
                 else:
