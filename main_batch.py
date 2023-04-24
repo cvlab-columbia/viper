@@ -4,6 +4,8 @@ import os
 import pathlib
 from functools import partial
 import warnings
+import traceback
+
 
 import pandas as pd
 import torch.multiprocessing as mp
@@ -79,6 +81,8 @@ def run_program(parameters, queues_in_, input_type_, retrying=False):
             # Functions to be used
             llm_query_partial, bool_to_yesno, distance, best_image_match)
     except Exception as e:
+        # print full traceback
+        traceback.print_exc()
         if retrying:
             return None, code
         print(f'Sample {sample_id} failed with error: {e}. Next you will see an "expected an indented block" error. ')
@@ -110,6 +114,7 @@ def main():
     batch_size = config.dataset.batch_size
     num_processes = min(batch_size, 50)
 
+
     if config.multiprocessing:
         queue_results_main = manager.Queue()
         queues_results = [manager.Queue() for _ in range(batch_size)]
@@ -126,11 +131,11 @@ def main():
         import wandb
         wandb.init(project="viper", config=OmegaConf.to_container(config))
         # log the prompt file
-        wandb.save(config.prompt)
+        wandb.save(config.codex.prompt)
 
     dataset = MyDataset(**config.dataset)
 
-    with open(config.prompt) as f:
+    with open(config.codex.prompt) as f:
         base_prompt = f.read().strip()
 
     codes_all = None
@@ -155,12 +160,14 @@ def main():
             if config.multiprocessing else open(os.devnull, "w") as pool:
         try:
             n_batches = len(dataloader)
+
             for i, batch in tqdm(enumerate(dataloader), total=n_batches):
 
                 # Combine all querys and get Codex predictions for them
                 # TODO compute Codex for next batch as current batch is being processed
+
                 if not config.use_cached_codex:
-                    codes = codex(prompt=batch['info_to_prompt'], base_prompt=base_prompt)
+                    codes = codex(prompt=batch['query'], base_prompt=base_prompt)
 
                 else:
                     codes = codes_all[i * batch_size:(i + 1) * batch_size]  # If cache
@@ -171,13 +178,13 @@ def main():
                         # Otherwise, we would create a new model for every process
                         results = []
                         for c, sample_id, img, possible_answers, query in \
-                                zip(codes, batch['sample_id'], batch['img'], batch['possible_answers'], batch['query']):
+                                zip(codes, batch['sample_id'], batch['image'], batch['possible_answers'], batch['query']):
                             result = run_program([c, sample_id, img, possible_answers, query], queues_in, input_type)
                             results.append(result)
                     else:
                         results = list(pool.imap(partial(
                             run_program, queues_in_=queues_in, input_type_=input_type),
-                            zip(codes, batch['sample_id'], batch['img'], batch['possible_answers'], batch['query'])))
+                            zip(codes, batch['sample_id'], batch['image'], batch['possible_answers'], batch['query'])))
                 else:
                     results = [(None, c) for c in codes]
                     warnings.warn("Not executing code! This is only generating the code. We set the flag "
@@ -192,7 +199,7 @@ def main():
                 all_possible_answers += batch['possible_answers']
                 all_query_types += batch['query_type']
                 all_querys += batch['query']
-                all_img_paths += [dataset.get_img_path(idx) for idx in batch['index']]
+                all_img_paths += [dataset.get_sample_path(idx) for idx in batch['index']]
                 if i % config.log_every == 0:
                     try:
                         accuracy = datasets.accuracy(all_results, all_answers, all_possible_answers, all_query_types)
@@ -201,6 +208,8 @@ def main():
                         console.print(f'Error computing accuracy: {e}')
 
         except Exception as e:
+            # print full stack trace
+            traceback.print_exc()
             console.print(f'Exception: {e}')
             console.print("Completing logging and exiting...")
 

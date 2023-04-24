@@ -69,14 +69,17 @@ class MyDataset(Dataset):
         return video
 
     def __getitem__(self, index):
-        query = self.df.iloc[index]["query"]
-        answer = self.df.iloc[index]["answer"]
+
+        out_dict = self.df.iloc[index].to_dict()
+
         sample_path = self.get_sample_path(index)
 
         # Load and transform image
         image = self.get_image(sample_path) if self.input_type == "image" else self.get_video(sample_path)
 
-        out_dict = {"query": query, "answer": answer, "image": image, 'index': index}
+        out_dict["image"] = image
+        out_dict["index"] = index
+        
         return out_dict
 
     def __len__(self):

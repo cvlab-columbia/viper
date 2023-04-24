@@ -940,6 +940,7 @@ def codex_helper(extended_prompt):
 #         if len(resp) == 1:
 #             resp = resp[0]
     else:
+        warnings.warn('OpenAI Codex is deprecated. Please use GPT-4 or GPT-3.5-turbo.')
         response = openai.Completion.create(
             model="code-davinci-002",
             temperature=config.codex.temperature,
@@ -1218,7 +1219,6 @@ class XVLMModel(BaseModel):
         }
         with warnings.catch_warnings(), HiddenPrints("XVLM"):
             model = XVLMBase(config_xvlm, use_contrastive_loss=True, vision_config=vision_config)
-
             checkpoint = torch.load(path_checkpoint, map_location='cpu')
             state_dict = checkpoint['model'] if 'model' in checkpoint.keys() else checkpoint
             msg = model.load_state_dict(state_dict, strict=False)

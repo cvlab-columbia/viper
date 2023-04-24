@@ -155,6 +155,7 @@ class ImagePatch:
             #     mask = all_areas == all_areas.max()  # At least return one element
             all_object_coordinates = all_object_coordinates[mask]
 
+
         return [self.crop(*coordinates) for coordinates in all_object_coordinates]
 
     def exists(self, object_name) -> bool:
