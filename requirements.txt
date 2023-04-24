@@ -1,4 +1,4 @@
-accelerate==0.16.0
+accelerate==0.18.0
 backoff==2.2.1
 bitsandbytes==0.38.1
 cityscapesscripts==2.2.1
