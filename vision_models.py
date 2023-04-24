@@ -1118,6 +1118,9 @@ class BLIPModel(BaseModel):
         if not self.to_batch:
             image, question, task = [image], [question], [task]
 
+        if len(image) > 0 and 'float' in str(image[0].dtype) and image[0].max() <= 1:
+            image = [im * 255 for im in image]
+
         # Separate into qa and caption batches.
         prompts_qa = [self.qa_prompt.format(self.pre_question(q)) for q, t in zip(question, task) if t == 'qa']
         images_qa = [im for i, im in enumerate(image) if task[i] == 'qa']
