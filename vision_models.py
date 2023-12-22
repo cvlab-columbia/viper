@@ -78,6 +78,7 @@ class BaseModel(abc.ABC):
         """
         return [cls.name]
 
+
 # ------------------------------ Specific models ---------------------------- #
 
 
@@ -381,7 +382,7 @@ class OwlViTModel(BaseModel):
             text = [text]
         text_original = text
         text = ['a photo of a ' + t for t in text]
-        inputs = self.processor(text=text, images=image, return_tensors="pt") # padding="longest",
+        inputs = self.processor(text=text, images=image, return_tensors="pt")  # padding="longest",
         inputs = {k: v.to(self.dev) for k, v in inputs.items()}
         outputs = self.model(**inputs)
 
@@ -512,7 +513,7 @@ class GLIPModel(BaseModel):
                 tic = timeit.time.perf_counter()
 
                 # compute predictions
-                with HiddenPrints():   # Hide some deprecated notices
+                with HiddenPrints():  # Hide some deprecated notices
                     predictions = self.model(image_list, captions=[original_caption],
                                              positive_map=positive_map_label_to_token)
                 predictions = [o.to(self.cpu_device) for o in predictions]
@@ -779,6 +780,8 @@ class GPT3Model(BaseModel):
         super().__init__(gpu_number=gpu_number)
         with open(config.gpt3.qa_prompt) as f:
             self.qa_prompt = f.read().strip()
+        with open(config.gpt3.guess_prompt) as f:
+            self.guess_prompt = f.read().strip()
         self.temperature = config.gpt3.temperature
         self.n_votes = config.gpt3.n_votes
         self.model = config.gpt3.model
@@ -802,7 +805,40 @@ class GPT3Model(BaseModel):
         answer_counts = Counter(answers)
         return answer_counts.most_common(1)[0][0]
 
-    def get_qa(self, prompts, prompt_base: str=None) -> list[str]:
+    def process_guesses(self, prompts):
+        prompt_base = self.guess_prompt
+        prompts_total = []
+        for p in prompts:
+            question, guess1, _ = p
+            if len(guess1) == 1:
+                # In case only one option is given as a guess
+                guess1 = [guess1[0], guess1[0]]
+            prompts_total.append(prompt_base.format(question, guess1[0], guess1[1]))
+        response = self.process_guesses_fn(prompts_total)
+        if self.n_votes > 1:
+            response_ = []
+            for i in range(len(prompts)):
+                if self.model == 'chatgpt':
+                    resp_i = [r['message']['content'] for r in
+                              response['choices'][i * self.n_votes:(i + 1) * self.n_votes]]
+                else:
+                    resp_i = [r['text'] for r in response['choices'][i * self.n_votes:(i + 1) * self.n_votes]]
+                response_.append(self.most_frequent(resp_i).lstrip())
+            response = response_
+        else:
+            if self.model == 'chatgpt':
+                response = [r['message']['content'].lstrip() for r in response['choices']]
+            else:
+                response = [r['text'].lstrip() for r in response['choices']]
+        return response
+
+    def process_guesses_fn(self, prompt):
+        # The code is the same as get_qa_fn, but we separate in case we want to modify it later
+        response = self.query_gpt3(prompt, model=self.model, max_tokens=5, logprobs=1, stream=False,
+                                   stop=["\n", "<|endoftext|>"])
+        return response
+
+    def get_qa(self, prompts, prompt_base: str = None) -> list[str]:
         if prompt_base is None:
             prompt_base = self.qa_prompt
         prompts_total = []
@@ -814,8 +850,8 @@ class GPT3Model(BaseModel):
             response_ = []
             for i in range(len(prompts)):
                 if self.model == 'chatgpt':
-                    resp_i = [r['message']['content']
-                              for r in response['choices'][i * self.n_votes:(i + 1) * self.n_votes]]
+                    resp_i = [r['message']['content'] for r in
+                              response['choices'][i * self.n_votes:(i + 1) * self.n_votes]]
                 else:
                     resp_i = [r['text'] for r in response['choices'][i * self.n_votes:(i + 1) * self.n_votes]]
                 response_.append(self.most_frequent(resp_i))
@@ -891,6 +927,8 @@ class GPT3Model(BaseModel):
         if len(prompt) > 0:
             if process_name == 'gpt3_qa':
                 response = self.get_qa(prompt)
+            elif process_name == 'gpt3_guess':
+                response = self.process_guesses(prompt)
             else:  # 'gpt3_general', general prompt, has to be given all of it
                 response = self.get_general(prompt)
         else:
@@ -911,7 +949,7 @@ class GPT3Model(BaseModel):
 
     @classmethod
     def list_processes(cls):
-        return ['gpt3_' + n for n in ['qa', 'general']]
+        return ['gpt3_' + n for n in ['qa', 'guess', 'general']]
 
 
 # @cache.cache
@@ -924,24 +962,26 @@ def codex_helper(extended_prompt):
         if not isinstance(extended_prompt, list):
             extended_prompt = [extended_prompt]
         responses = [openai.ChatCompletion.create(
-                model=config.codex.model,
-                messages=[
-                    # {"role": "system", "content": "You are a helpful assistant."},
-                    {"role": "system", "content": "Only answer with a function starting def execute_command."},
-                    {"role": "user", "content": prompt}
-                ],
-                temperature=config.codex.temperature,
-                max_tokens=config.codex.max_tokens,
-                top_p = 1.,
-                frequency_penalty=0,
-                presence_penalty=0,
-#                 best_of=config.codex.best_of,
-                stop=["\n\n"],
-                )
-                    for prompt in extended_prompt]
-        resp = [r['choices'][0]['message']['content'].replace("execute_command(image)", "execute_command(image, my_fig, time_wait_between_lines, syntax)") for r in responses]
-#         if len(resp) == 1:
-#             resp = resp[0]
+            model=config.codex.model,
+            messages=[
+                # {"role": "system", "content": "You are a helpful assistant."},
+                {"role": "system", "content": "Only answer with a function starting def execute_command."},
+                {"role": "user", "content": prompt}
+            ],
+            temperature=config.codex.temperature,
+            max_tokens=config.codex.max_tokens,
+            top_p=1.,
+            frequency_penalty=0,
+            presence_penalty=0,
+            #                 best_of=config.codex.best_of,
+            stop=["\n\n"],
+        )
+            for prompt in extended_prompt]
+        resp = [r['choices'][0]['message']['content'].replace("execute_command(image)",
+                                                              "execute_command(image, my_fig, time_wait_between_lines, syntax)")
+                for r in responses]
+    #         if len(resp) == 1:
+    #             resp = resp[0]
     else:
         warnings.warn('OpenAI Codex is deprecated. Please use GPT-4 or GPT-3.5-turbo.')
         response = openai.Completion.create(
@@ -1161,7 +1201,7 @@ class BLIPModel(BaseModel):
         generated_text = [cap.strip() for cap in
                           self.processor.batch_decode(generated_ids, skip_special_tokens=True)]
         return generated_text
-    
+
     def pre_question(self, question):
         # from LAVIS blip_processors
         question = re.sub(
@@ -1223,7 +1263,6 @@ class SaliencyModel(BaseModel):
 
     def __init__(self, gpu_number=0,
                  path_checkpoint=f'{config.path_pretrained_models}/saliency_inspyrenet_plus_ultra'):
-
         from base_models.inspyrenet.saliency_transforms import get_transform
         from base_models.inspyrenet.InSPyReNet import InSPyReNet
         from base_models.inspyrenet.backbones.SwinTransformer import SwinB

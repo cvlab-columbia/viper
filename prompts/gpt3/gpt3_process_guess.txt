@@ -1,0 +1,121 @@
+Please answer the following questions using the given guesses.
+If a unique answer cannot be determined, choose only one of the possible answers.
+Aim to reply in ONE word (at MOST 2).
+
+Question: What kind of flowers are these?
+Guess 1: these flowers are purple, so lavender, lilac, iris, and hyacinth
+Guess 2: purple flowers
+Answer: lilac
+
+Question: What do these people on the bikes normally write and give out?
+Guess 1: the people on bikes are police, so Tickets
+Guess 2: tickets
+Answer: tickets
+
+Question: What kind of cold meet is this?
+Guess 1: what kind of meat is this is beef, so roast beef
+Guess 2: beef
+Answer: beef
+
+Question: Can you guess the place shown in this picture?
+Guess 1: the place is tourist attraction, so the Eiffel Tower in Paris, France
+Guess 2: big ben
+Answer: big ben
+
+Question: When was this type of vehicle with two equal sized wheels invented?
+Guess 1: the vehicle is a bicycle, so 19th century
+Guess 2: 1819
+Answer: 1800s
+
+Question: What is the flavor of the pink topping on this dessert?
+Guess 1: the topping is whipped cream, so strawberry, vanilla, chocolate, and raspberry
+Guess 2: strawberry
+Answer: strawberry
+
+Question: How are these festive lights held in place?
+Guess 1: these festive lights are christmas lights, so with hooks clips
+Guess 2: string
+Answer: string
+
+Question: Who is famous for allegedly doing this in a lightning storm?
+Guess 1: what is being done is flying a kite, so Benjamin Franklin
+Guess 2: Charles Manson
+Answer: Benjamin Franklin
+
+Question: What is the object atop the skier's head used for?
+Guess 1: the object atop the skier's head is helmet, so protection from head injuries
+Guess 2: sunglasses
+Answer: protection
+
+Question: What rank is the man on the right?
+Guess 1: who is the man on the right is sailor, so seaman
+Guess 2: captain
+Answer: captain
+
+Question: Chemically what kind of water is in the picture?
+Guess 1: the water in the picture is waves, so salt water
+Guess 2: salt water
+Answer: salt
+
+Question: Is the material tweed or canvas?
+Guess 1: the material is fabric, so fabric
+Guess 2: canvas
+Answer: canvas
+
+Question: Which type of meat are in the photo?
+Guess 1: the meat in the photo is sausage, so pork
+Guess 2: hot dogs
+Answer: hotdogs
+
+Question: What sort of predator might there be in an area like this?
+Guess 1: this area is mountains, so predators like wolves fox
+Guess 2: shark
+Answer: shark
+
+Question: Can you name a sport this person could be a part of?
+Guess 1: this person is a racer, so racing such as auto
+Guess 2: motorcycle racing
+Answer: racing
+
+Question: Who makes the yellow top worn in this photograph?
+Guess 1: the top is red, so brand is unknown
+Guess 2: Burton
+Answer: Burton
+
+Question: Is the athlete right or left handed?
+Guess 1: what is the athlete doing is playing baseball, so unclear
+Guess 2: right handed
+Answer: right handed
+
+Question: Is this food high or low on fat?
+Guess 1: what kind of food is this is sandwich, so depends on ingredients
+Guess 2: high
+Answer: high
+
+Question: What wood are those cabinets made of?
+Guess 1: what kind of cabinets are these is kitchen cabinets, so typically wood such as oak
+Guess 2: maple
+
+Question: Which objects shown are typically associated with small children?
+Guess 1: what objects are shown are stuffed animals, so toys
+Guess 2: teddy bears
+Answer: teddy bears
+
+Question: What small appliance is that stuffed animal inside?
+Guess 1: the stuffed animal is a teddy bear, so vacuum cleaner
+Guess 2: microwave
+Answer: microwave
+
+Question: What is this made with?
+Guess 1: what is this is muffin, so flour sugar eggs
+Guess 2: oats
+Answer: flour
+
+Question: What is the position name of the player squatting down?
+Guess 1: who is squatting down is the batter, so hitter
+Guess 2: catcher
+
+Question: {}
+Guess 1: {}
+Guess 2: {}
+Answer (remember, only 1-2 words):

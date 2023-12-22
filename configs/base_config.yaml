@@ -43,6 +43,7 @@ best_match_model: xvlm                              # Which model to use for bes
 gpt3:                                               # GPT-3 configuration
     n_votes: 1                                      # Number of tries to use for GPT-3. Use with temperature > 0
     qa_prompt: ./prompts/gpt3/gpt3_qa.txt
+    guess_prompt: ./prompts/gpt3/gpt3_process_guess.txt
     temperature: 0.                                 # Temperature for GPT-3. Almost deterministic if 0
     model: text-davinci-003                         # See openai.Model.list() for available models
 
