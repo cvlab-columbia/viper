@@ -3,9 +3,10 @@ path_pretrained_models: './pretrained_models'       # Path to the pretrained mod
 execute_code: False                                 # Execute the code after generating it. Only applies to main_batch
 
 dataset:                                            # Dataset configuration
+    dataset_name: 'MyDataset'                       # Dataset name
     data_path: 'data'                               # Dataset path
     split: ''                                       # Dataset split. If '', it assumes there is only one split
-    max_samples: 100                                # Maximum number of samples to load
+    max_samples:                                    # Maximum number of samples to load
     batch_size: 20                                  # Batch size
     start_sample: 0                                 # Start sample index. Only used if max_samples is not None
 
@@ -22,6 +23,7 @@ load_models:                                        # Which pretrained models to
     saliency: False
     xvlm: True
     codex: True
+    codellama: False
 
 detect_thresholds:                                  # Thresholds for the models that perform detection
     glip: 0.5
@@ -49,7 +51,7 @@ codex:
     best_of: 1                                      # Number of tries to choose from. Use when temperature > 0
     max_tokens: 512                                 # Maximum number of tokens to generate for Codex
     prompt: ./prompts/chatapi.prompt                # Codex prompt file, which defines the API. (doesn't support video for now due to token limits)
-    model: gpt-3.5-turbo                            # Codex model to use. [gpt-3.5-turbo, gpt-4]. See openai.Model.list() for available models
+    model: gpt-3.5-turbo                            # Codex model to use. [code-davinci-002, gpt-3.5-turbo, gpt-4]. See openai.Model.list() for available models
 
 # Saving and loading parameters
 save: True                                          # Save the results to a file

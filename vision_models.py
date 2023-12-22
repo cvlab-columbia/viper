@@ -45,6 +45,8 @@ class BaseModel(abc.ABC):
     seconds_collect_data = 1.5  # Window of seconds to group inputs, if to_batch is True
     max_batch_size = 10  # Maximum batch size, if to_batch is True. Maximum allowed by OpenAI
     requires_gpu = True
+    num_gpus = 1  # Number of required GPUs
+    load_order = 0  # Order in which the model is loaded. Lower is first. By default, models are loaded alphabetically
 
     def __init__(self, gpu_number):
         self.dev = f'cuda:{gpu_number}' if device == 'cuda' else device
@@ -831,11 +833,12 @@ class GPT3Model(BaseModel):
         return response
 
     def get_general(self, prompts) -> list[str]:
-        if self.model == "chatgpt":
-            raise NotImplementedError
         response = self.query_gpt3(prompts, model=self.model, max_tokens=256, top_p=1, frequency_penalty=0,
                                    presence_penalty=0)
-        response = [r["text"] for r in response['choices']]
+        if self.model == 'chatgpt':
+            response = [r['message']['content'] for r in response['choices']]
+        else:
+            response = [r["text"] for r in response['choices']]
         return response
 
     def query_gpt3(self, prompt, model="text-davinci-003", max_tokens=16, logprobs=None, stream=False,
@@ -867,7 +870,7 @@ class GPT3Model(BaseModel):
     def forward(self, prompt, process_name):
         if not self.to_batch:
             prompt = [prompt]
-        
+
         if process_name == 'gpt3_qa':
             # if items in prompt are tuples, then we assume it is a question and context
             if isinstance(prompt[0], tuple) or isinstance(prompt[0], list):
@@ -969,7 +972,7 @@ class CodexModel(BaseModel):
     # Not batched, but every call will probably be a batch (coming from the same process)
 
     def __init__(self, gpu_number=0):
-        super().__init__(gpu_number=0)
+        super().__init__(gpu_number=gpu_number)
         with open(config.codex.prompt) as f:
             self.base_prompt = f.read().strip()
         self.fixed_code = None
@@ -977,7 +980,7 @@ class CodexModel(BaseModel):
             with open(config.fixed_code_file) as f:
                 self.fixed_code = f.read()
 
-    def forward(self, prompt, input_type='image', prompt_file=None, base_prompt=None):
+    def forward(self, prompt, input_type='image', prompt_file=None, base_prompt=None, extra_context=None):
         if config.use_fixed_code:  # Use the same program for every sample, like in socratic models
             return [self.fixed_code] * len(prompt) if isinstance(prompt, list) else self.fixed_code
 
@@ -988,11 +991,14 @@ class CodexModel(BaseModel):
             base_prompt = self.base_prompt
 
         if isinstance(prompt, list):
-            extended_prompt = [base_prompt.replace("INSERT_QUERY_HERE", p).replace('INSERT_TYPE_HERE', input_type)
-                               for p in prompt]
+            extended_prompt = [base_prompt.replace("INSERT_QUERY_HERE", p).
+                               replace('INSERT_TYPE_HERE', input_type).
+                               replace('EXTRA_CONTEXT_HERE', str(ec))
+                               for p, ec in zip(prompt, extra_context)]
         elif isinstance(prompt, str):
             extended_prompt = [base_prompt.replace("INSERT_QUERY_HERE", prompt).
-                               replace('INSERT_TYPE_HERE', input_type)]
+                               replace('INSERT_TYPE_HERE', input_type).
+                               replace('EXTRA_CONTEXT_HERE', extra_context)]
         else:
             raise TypeError("prompt must be a string or a list of strings")
 
@@ -1007,6 +1013,7 @@ class CodexModel(BaseModel):
             response = []
             for i in range(0, len(extended_prompt), self.max_batch_size):
                 response += self.forward_(extended_prompt[i:i + self.max_batch_size])
+            return response
         try:
             response = codex_helper(extended_prompt)
         except openai.error.RateLimitError as e:
@@ -1034,6 +1041,76 @@ class CodexModel(BaseModel):
         return response
 
 
+class CodeLlama(CodexModel):
+    name = 'codellama'
+    requires_gpu = True
+    max_batch_size = 3
+    load_order = 1  # Load this model last
+
+    # Not batched, but every call will probably be a batch (coming from the same process)
+
+    def __init__(self, gpu_number=0):
+        super().__init__(gpu_number=gpu_number)
+
+        from transformers import LlamaForCausalLM, CodeLlamaTokenizer
+
+        # Load Llama2
+        model_id = config.codex.codellama_model_name
+
+        if model_id.startswith('/'):
+            assert os.path.exists(model_id), \
+                f'Model path {model_id} does not exist. If you use the model ID it will be downloaded automatically'
+        else:
+            assert model_id in ['codellama/CodeLlama-7b-hf', 'codellama/CodeLlama-13b-hf', 'codellama/CodeLlama-34b-hf',
+                                'codellama/CodeLlama-7b-Python-hf', 'codellama/CodeLlama-13b-Python-hf',
+                                'codellama/CodeLlama-34b-Python-hf', 'codellama/CodeLlama-7b-Instruct-hf',
+                                'codellama/CodeLlama-13b-Instruct-hf', 'codellama/CodeLlama-34b-Instruct-hf']
+        self.tokenizer = CodeLlamaTokenizer.from_pretrained(model_id)
+        self.tokenizer.pad_token = self.tokenizer.eos_token
+        self.tokenizer.padding_side = 'left'
+
+        # Compute this when the other models have already been loaded
+        # Ignore gpu number
+        usage_ratio = 0.15  # If it is small, it will use more GPUs, which will allow larger batch sizes
+        leave_empty = 0.7  # If other models are using more than (1-leave_empty) of memory, do not use
+        max_memory = {}
+        for gpu_number in range(torch.cuda.device_count()):
+            mem_available = torch.cuda.mem_get_info(f'cuda:{gpu_number}')[0]
+            if mem_available <= leave_empty * torch.cuda.get_device_properties(gpu_number).total_memory:
+                mem_available = 0
+            max_memory[gpu_number] = mem_available * usage_ratio
+            if gpu_number == 0:
+                max_memory[gpu_number] /= 10
+        self.model = LlamaForCausalLM.from_pretrained(
+            model_id,
+            torch_dtype=torch.float16,
+            # load_in_8bit=True,  # For some reason this results in OOM when doing forward pass
+            device_map="sequential",
+            max_memory=max_memory,
+        )
+        self.model.eval()
+
+    def run_codellama(self, prompt):
+        input_ids = self.tokenizer(prompt, return_tensors="pt", padding=True, truncation=True)["input_ids"]
+        generated_ids = self.model.generate(input_ids.to("cuda"), max_new_tokens=128)
+        generated_ids = generated_ids[:, input_ids.shape[-1]:]
+        generated_text = [self.tokenizer.decode(gen_id, skip_special_tokens=True) for gen_id in generated_ids]
+        generated_text = [text.split('\n\n')[0] for text in generated_text]
+        return generated_text
+
+    def forward_(self, extended_prompt):
+        if len(extended_prompt) > self.max_batch_size:
+            response = []
+            for i in range(0, len(extended_prompt), self.max_batch_size):
+                response += self.forward_(extended_prompt[i:i + self.max_batch_size])
+            return response
+        with torch.no_grad():
+            response = self.run_codellama(extended_prompt)
+        # Clear GPU memory
+        torch.cuda.empty_cache()
+        return response
+
+
 class BLIPModel(BaseModel):
     name = 'blip'
     to_batch = True
@@ -1045,8 +1122,7 @@ class BLIPModel(BaseModel):
         super().__init__(gpu_number)
 
         # from lavis.models import load_model_and_preprocess
-        from transformers import BlipProcessor, BlipForConditionalGeneration, Blip2Processor, \
-            Blip2ForConditionalGeneration
+        from transformers import Blip2Processor, Blip2ForConditionalGeneration
 
         # https://huggingface.co/models?sort=downloads&search=Salesforce%2Fblip2-
         assert blip_v2_model_type in ['blip2-flan-t5-xxl', 'blip2-flan-t5-xl', 'blip2-opt-2.7b', 'blip2-opt-6.7b',

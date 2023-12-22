@@ -109,11 +109,10 @@ def main():
     mp.set_start_method('spawn')
 
     from vision_processes import queues_in, finish_all_consumers, forward, manager
-    from datasets.dataset import MyDataset
+    from datasets import get_dataset
 
     batch_size = config.dataset.batch_size
     num_processes = min(batch_size, 50)
-
 
     if config.multiprocessing:
         queue_results_main = manager.Queue()
@@ -122,7 +121,8 @@ def main():
         queue_results_main = None
         queues_results = [None for _ in range(batch_size)]
 
-    codex = partial(forward, model_name='codex', queues=[queues_in, queue_results_main])
+    model_name_codex = 'codellama' if config.codex.model == 'codellama' else 'codex'
+    codex = partial(forward, model_name=model_name_codex, queues=[queues_in, queue_results_main])
 
     if config.clear_cache:
         cache.clear()
@@ -133,7 +133,7 @@ def main():
         # log the prompt file
         wandb.save(config.codex.prompt)
 
-    dataset = MyDataset(**config.dataset)
+    dataset = get_dataset(config.dataset)
 
     with open(config.codex.prompt) as f:
         base_prompt = f.read().strip()
@@ -151,7 +151,7 @@ def main():
     all_answers = []
     all_codes = []
     all_ids = []
-    all_querys = []
+    all_queries = []
     all_img_paths = []
     all_possible_answers = []
     all_query_types = []
@@ -163,11 +163,12 @@ def main():
 
             for i, batch in tqdm(enumerate(dataloader), total=n_batches):
 
-                # Combine all querys and get Codex predictions for them
+                # Combine all queries and get Codex predictions for them
                 # TODO compute Codex for next batch as current batch is being processed
 
                 if not config.use_cached_codex:
-                    codes = codex(prompt=batch['query'], base_prompt=base_prompt)
+                    codes = codex(prompt=batch['query'], base_prompt=base_prompt, input_type=input_type,
+                                  extra_context=batch['extra_context'])
 
                 else:
                     codes = codes_all[i * batch_size:(i + 1) * batch_size]  # If cache
@@ -198,11 +199,11 @@ def main():
                 all_answers += batch['answer']
                 all_possible_answers += batch['possible_answers']
                 all_query_types += batch['query_type']
-                all_querys += batch['query']
+                all_queries += batch['query']
                 all_img_paths += [dataset.get_sample_path(idx) for idx in batch['index']]
                 if i % config.log_every == 0:
                     try:
-                        accuracy = datasets.accuracy(all_results, all_answers, all_possible_answers, all_query_types)
+                        accuracy = dataset.accuracy(all_results, all_answers, all_possible_answers, all_query_types)
                         console.print(f'Accuracy at Batch {i}/{n_batches}: {accuracy}')
                     except Exception as e:
                         console.print(f'Error computing accuracy: {e}')
@@ -214,7 +215,7 @@ def main():
             console.print("Completing logging and exiting...")
 
     try:
-        accuracy = datasets.accuracy(all_results, all_answers, all_possible_answers, all_query_types)
+        accuracy = dataset.accuracy(all_results, all_answers, all_possible_answers, all_query_types)
         console.print(f'Final accuracy: {accuracy}')
     except Exception as e:
         print(f'Error computing accuracy: {e}')
@@ -233,13 +234,13 @@ def main():
                 filename = 'results_' + str(max([int(ef.stem.split('_')[-1]) for ef in existing_files if
                                                  str.isnumeric(ef.stem.split('_')[-1])]) + 1) + '.csv'
         print('Saving results to', filename)
-        df = pd.DataFrame([all_results, all_answers, all_codes, all_ids, all_querys, all_img_paths,
+        df = pd.DataFrame([all_results, all_answers, all_codes, all_ids, all_queries, all_img_paths,
                            all_possible_answers]).T
         df.columns = ['result', 'answer', 'code', 'id', 'query', 'img_path', 'possible_answers']
         # make the result column a string
         df['result'] = df['result'].apply(str)
         df.to_csv(results_dir / filename, header=True, index=False, encoding='utf-8')
-        # torch.save([all_results, all_answers, all_codes, all_ids, all_querys, all_img_paths], results_dir/filename)
+        # torch.save([all_results, all_answers, all_codes, all_ids, all_queries, all_img_paths], results_dir/filename)
 
         if config.wandb:
             wandb.log({'accuracy': accuracy})

@@ -1,0 +1,79 @@
+We want to answer a question about a video. We have information about the video. We also have a question, and a list of options. We want to return the option that is most likely to be the correct answer to the question.
+
+Example:
+- Question: how did the boy in stripped open the book to see its contents
+- Caption of middle frame: two children playing on a couch in a living room
+- Is there a girl in the scene: True
+- Possible answers: ['asked the girl for help', 'observe the book', 'stare at the book', 'flip the pages', 'with a bookmark']
+Take a close look at the question and information provided and select one of the possible answers
+- Selected answer: flip the pages
+
+Example:
+- Question: what does the man in checkered do after walking onto the stage with microphone stands at the start
+- Caption of frame after walking onto the stage: a man and woman in a kimono is shown
+- Possible answers: ['take away the stand', 'set up the stand', 'takes out some paper', 'bow to people', 'hands him a bottle']
+Take a close look at the question and information provided and select one of the possible answers
+- Selected answer: set up the stand
+
+Example:
+- Question: what is the relation between the children
+- Caption of frame of interest: a group of children wearing hats is shown
+- Description of children: a group of children sitting in a room with hats on
+- Location: school
+- Possible answers:  ['twins', 'siblings', 'band members', 'classmate', 'friends']
+Take a close look at the question and information provided and select one of the possible answers
+- Selected answer: classmate
+
+Example:
+- Question: what does the man in white at the side do as the girl slide down
+- Caption of frame when the girl slides down: a child playing on a slide in a backyard
+- Action of man: swinging his son
+- Objects in the image: found: [], not found: ['rake', 'cup']
+- Possible answers: ['push the rake again', 'look and walk around', 'push boy on swing', 'drink from cup', 'smiles']
+Take a close look at the question and information provided and select one of the possible answers
+- Selected answer: push boy on swing
+
+Example
+- Question: why does the person in white put the weight onto the rack after carrying it
+- Caption of frame after carrying the weight: a man lifting a barbell in a gym
+- Description of person in white: a man doing a barbell squat
+- Possible answers: ['to support the man', 'be elegant', 'to demostrate', 'part of performance', 'take a break']
+Take a close look at the question and information provided and select one of the possible answers
+- Selected answer: take a break
+
+Example
+- Question:  why was the cup positioned under the tap
+- Caption of frame: a woman pouring a beer at a bar
+- Possible answers: ['get the drink', 'catch spills', 'make cat comfortable with water', 'soapy', 'facilitate sucking for water']
+Take a close look at the question and information provided and select one of the possible answers
+- Selected answer: get the drink
+
+Example:
+- Question: why is the woman wearing a raincoat
+- Caption of frame: scene indoors with a lot of people
+- Possible answers: ['fashion modeling', 'protect from rain', 'cook', 'hug a friend', 'climatology']
+Reason about the question and information provided and select one of the possible answers.
+- Selected answer: fashion modeling
+
+Example:
+- Question: why are there many lines on the snow
+- Caption of frame: a person skiing down a snowy hill
+- Objects in the image: found: ['ski', 'person', 'tree'], not found: ['vehicle', 'rope']
+- Possible answers: ['due to ropes', 'snowmobile routes', 'due to vehicle', 'many people skied', 'tree roots']
+Take a close look at the question and information provided and select one of the possible answers
+- Selected answer: many people skied
+
+Example:
+- Question: where did the man in grey put his right hand when he started sliding down the slope
+- Caption of frame when starting sliding: a person riding a bike down a hill
+- Right hand location: in his pocket
+- Possible answers: ['on his face', 'on her cheeks', 'back pocket', 'on table', 'railings']
+Take a close look at the question and information provided and select one of the possible answers
+- Selected answer: back pocket
+
+Example:
+- Question: {question}
+{info}
+- Possible answers: {options}
+Take a close look at the question and information provided and select one of the possible answers.
+- Selected answer:

@@ -1,0 +1,6 @@
+codex:
+    model: codellama
+    codellama_model_name: /path/to/code_llama_models/CodeLlama-34b-Python-hf
+load_models:
+    codex: False
+    codellama: True

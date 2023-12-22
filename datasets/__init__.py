@@ -1,4 +1,38 @@
+"""
+Data loaders
+Adapted in part from https://github.com/phiyodr/vqaloader/blob/master/vqaloader/loaders.py
+"""
+
 import torch
+from torchvision import transforms
+
+
+# ----------------------------- General for all datasets ----------------------------- #
+def get_dataset(config_dataset):
+    dataset_name = config_dataset.dataset_name
+
+    if dataset_name == 'RefCOCO':
+        from datasets.refcoco import RefCOCODataset
+        dataset = RefCOCODataset(**config_dataset,
+                                 image_transforms=transforms.Compose([transforms.ToTensor()]))
+    elif dataset_name == 'GQA':
+        from datasets.gqa import GQADataset
+        dataset = GQADataset(**config_dataset,
+                             balanced=True,
+                             image_transforms=transforms.Compose([transforms.ToTensor()]))
+    elif dataset_name == 'OKVQA':
+        from datasets.okvqa import OKVQADataset
+        dataset = OKVQADataset(**config_dataset,
+                               image_transforms=transforms.Compose([transforms.ToTensor()]))
+    elif dataset_name == 'NExTQA':
+        from datasets.nextqa import NExTQADataset
+        dataset = NExTQADataset(**config_dataset)
+    elif dataset_name == 'MyDataset':
+        from datasets.my_dataset import MyDataset
+        dataset = MyDataset(**config_dataset)
+    else:
+        raise ValueError(f"Unknown dataset {dataset_name}")
+    return dataset
 
 
 def general_postprocessing(prediction):

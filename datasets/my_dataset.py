@@ -7,13 +7,15 @@ from PIL import Image
 import pandas as pd
 from torch.utils.data import Dataset
 
+from datasets import accuracy as general_accuracy
+
 
 class MyDataset(Dataset):
     def __init__(self, split, data_path="", input_type='image', image_transforms=None, fps=30, max_num_frames=30,
                  max_samples=None, start_sample=0, **kwargs):
         """
         Args:
-            split (str): Data split. One of ["challenge", "submission", "test", "testdev", "train", "val"]
+            split (str): Data split.
             data_path (str): Path to the data folder
             input_type (str): Type of input. One of ["image", "video"]
             image_transforms (callable, optional): Optional transform to be applied on an image. Only used if input_type
@@ -79,8 +81,15 @@ class MyDataset(Dataset):
 
         out_dict["image"] = image
         out_dict["index"] = index
-        
+
+        if 'extra_context' not in out_dict:
+            out_dict['extra_context'] = ''
+
         return out_dict
 
     def __len__(self):
         return self.n_samples
+
+    @classmethod
+    def accuracy(cls, *args, **kwargs):
+        return general_accuracy(*args, **kwargs)

@@ -32,7 +32,7 @@ examples, use `main_batch.py` as discussed later on.
 > `main_simple.ipynb`). 
 
 
-> :information_source: NOTE: OpenAI will discontinue support for the Codex API on March 23rd. This repository implements
+> :information_source: NOTE: OpenAI discontinued support for the Codex API on March 23rd, 2023. This repository implements
 > GPT-3.5 Turbo and GPT-4 as alternatives, but we have not tested them extensively; as they are chat models and not completion, their behavior likely differs.
 
 ## Detailed Installation
@@ -124,7 +124,7 @@ CONFIG_NAMES=your_config_name python main_batch.py
 
 `CONFIG_NAMES` is an environment variable that specifies the configuration files to use.
 
-If you want to run the code using multiprocessing, set `multiprocessing: True` in the config file:
+If you want to run the code using multiprocessing, set `multiprocessing: True` in the config file.
 
 It is especially important to consider the risks of executing arbitrary code when running in a batch; in particular, if you modify the API or any inputs to Codex, be mindful to not include potentially damaging abilities such as file modification/deletion.
 

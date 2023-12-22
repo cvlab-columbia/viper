@@ -1,0 +1,19 @@
+dataset:
+  data_path: /path/to/datasets/NExTQA/
+  dataset_name: NExTQA
+  version: multiplechoice
+  fps: 1
+  max_num_frames: 30
+  split: val
+  batch_size: 10
+  max_samples: 100
+
+codex:
+  prompt: ./prompts/benchmarks/nextqa.prompt
+select_answer_prompt: ./prompts/gpt3/video_question.txt
+fixed_code_file: ./prompts/fixed_code/blip2_video.prompt
+
+results_dir: ./results/nextqa/
+
+gpt3:
+  model: chatgpt

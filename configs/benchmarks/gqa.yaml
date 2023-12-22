@@ -1,0 +1,27 @@
+dataset:
+    data_path: '/path/to/datasets/GQA'
+    dataset_name: GQA
+    split: testdev
+    testing: False
+    max_samples: 1000
+    batch_size: 20
+    start_sample: 0
+
+prompt : ./prompts/benchmarks/gqa.prompt
+results_dir : ./results/gqa/
+
+load_models:
+    maskrcnn: True
+    clip: False
+    glip: True
+    owlvit: False
+    tcl: False
+    gpt3_list: False
+    gpt3_qa: False
+    gpt3_guess: False
+    depth: False
+    blip: True
+    saliency: False
+    xvlm: True
+
+fixed_code_file: ./prompts/fixed_code/blip2.prompt

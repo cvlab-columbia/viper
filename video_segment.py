@@ -3,6 +3,7 @@ from __future__ import annotations
 import torch
 from typing import Union, Iterator
 
+from configs import config
 from image_patch import ImagePatch
 from vision_processes import forward
 
@@ -72,7 +73,7 @@ class VideoSegment:
             image = self.trimmed_video[index]
         else:
             image = self.trimmed_video[-1]
-        return ImagePatch(image)
+        return ImagePatch(image, queues=self.queues)
 
     def trim(self, start: Union[int, None] = None, end: Union[int, None] = None) -> VideoSegment:
         """Returns a new VideoSegment containing a trimmed version of the original video at the [start, end]
@@ -96,6 +97,19 @@ class VideoSegment:
             end = min(end, self.num_frames)
 
         return VideoSegment(self.trimmed_video, start, end, self.start, queues=self.queues)
+
+    def select_answer(self, info: dict, question: str, options=None) -> str:
+        def format_dict(x):
+            if isinstance(x, dict):
+                x = ''.join([f'\n\t- {k}: {format_dict(v)}' for k, v in x.items()])
+            return x
+        with open(config.select_answer_prompt, 'r') as f:
+            prompt = f.read()
+        info_formatting = '\n'.join([f"- {k}: {format_dict(v)}" for k, v in info.items()])
+        prompt = prompt.format(info=info_formatting, question=question, options=options)
+        answer = self.forward('gpt3_general', prompt)
+        answer = answer.strip()
+        return answer
 
     def frame_iterator(self) -> Iterator[ImagePatch]:
         """Returns an iterator over the frames in the video segment."""

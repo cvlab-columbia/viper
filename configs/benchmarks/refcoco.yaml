@@ -1,0 +1,21 @@
+dataset:
+  data_path: /path/to/datasets/refcoco
+  dataset_name: RefCOCO
+  split_by: unc  # [google, unc]
+  split: testA
+  version: refcoco
+  batch_size: 20
+
+codex:
+  prompt: ./prompts/benchmarks/refcoco.prompt
+fixed_code_file: ./prompts/fixed_code/glip.prompt
+
+results_dir: ./results/refcoco/
+
+load_models:
+  gpt3_general: False
+
+ratio_box_area_to_image_area: 0.03
+crop_larger_margin: False
+
+

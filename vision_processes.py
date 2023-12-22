@@ -21,7 +21,9 @@ if mp.current_process().name == 'MainProcess':
     import vision_models
     # Create a list of all the defined models
     list_models = [m[1] for m in inspect.getmembers(vision_models, inspect.isclass)
-                   if vision_models.BaseModel in m[1].__bases__]
+                   if issubclass(m[1], vision_models.BaseModel) and m[1] != vision_models.BaseModel]
+    # Sort by attribute "load_order"
+    list_models.sort(key=lambda x: x.load_order)
     if config.multiprocessing:
         manager = mp.Manager()
     else:

@@ -1,0 +1,28 @@
+dataset:
+    data_path: /path/to/datasets/OKVQA
+    dataset_name: OKVQA
+    split: test
+    testing: False
+    max_samples:
+    batch_size: 20
+    start_sample: 0
+
+prompt: ./prompts/benchmarks/okvqa.prompt
+
+results_dir: ./results/okvqa/
+
+load_models:
+    maskrcnn: False
+    clip: False
+    glip: False
+    owlvit: False
+    tcl: False
+    gpt3_list: True
+    gpt3_qa: True
+    gpt3_guess: True
+    depth: False
+    blip: True
+    saliency: False
+    xvlm: False
+
+fixed_code_file: ./prompts/fixed_code/blip2.prompt

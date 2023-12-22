@@ -1,0 +1,6 @@
+
+    video_segment = VideoSegment(video)
+    frame_patch = video_segment.frame_from_index(video_segment.num_frames // 2)
+    query = query + '? The options to answer the previous question are: [' + ', '.join(possible_answers) + ']'
+
+    return frame_patch.simple_query(query)

@@ -1,0 +1,4 @@
+
+    image_patch = ImagePatch(image)
+    bbox = image_patch.forward('glip', image_patch.cropped_image, query)[0]
+    return image_patch.crop(*bbox)

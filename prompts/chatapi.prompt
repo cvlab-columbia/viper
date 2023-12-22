@@ -122,7 +122,7 @@ class ImagePatch:
         """
         return verify_property(self.cropped_image, object_name, property)
 
-    def best_text_match(self, option_list: List[str]) -> str:
+    def best_text_match(self, option_list: List[str], prefix: str=None) -> str:
         """Returns the string that best matches the image.
         Parameters
         -------
@@ -140,7 +140,7 @@ class ImagePatch:
         >>>     # Question assumes one foo patch
         >>>     return foo_patches[0].best_text_match(["gold", "white"])
         """
-        return best_text_match(self.cropped_image, option_list)
+        return best_text_match(self.cropped_image, option_list, prefix)
 
     def simple_query(self, question: str = None) -> str:
         """Returns the answer to a basic question asked about the image. If no question is provided, returns the answer
