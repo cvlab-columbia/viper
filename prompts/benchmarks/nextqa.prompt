@@ -1,0 +1,585 @@
+import math
+
+
+class ImagePatch:
+    """A Python class containing a crop of an image centered around a particular object, as well as relevant information.
+    Attributes
+    ----------
+    cropped_image : array_like
+        An array-like of the cropped image taken from the original image.
+    left, lower, right, upper : int
+        An int describing the position of the (left/lower/right/upper) border of the crop's bounding box in the original image.
+
+    Methods
+    -------
+    find(object_name: str)->List[ImagePatch]
+        Returns a list of new ImagePatch objects containing crops of the image centered around any objects found in the
+        image matching the object_name.
+    exists(object_name: str)->bool
+        Returns True if the object specified by object_name is found in the image, and False otherwise.
+    best_text_match(option_list: List[str], prefix: str)->str
+        Returns the string that best matches the image.
+    simple_query(question: str=None)->str
+        Returns the answer to a basic question asked about the image. If no question is provided, returns the answer
+        to "What is this?".
+    crop(left: int, lower: int, right: int, upper: int)->ImagePatch
+        Returns a new ImagePatch object containing a crop of the image at the given coordinates.
+    """
+
+    def __init__(self, image, left: int = None, lower: int = None, right: int = None, upper: int = None):
+        """Initializes an ImagePatch object by cropping the image at the given coordinates and stores the coordinates as
+        attributes. If no coordinates are provided, the image is left unmodified, and the coordinates are set to the
+        dimensions of the image.
+        Parameters
+        -------
+        image : array_like
+            An array-like of the original image.
+        left, lower, right, upper : int
+            An int describing the position of the (left/lower/right/upper) border of the crop's bounding box in the original image.
+        """
+        if left is None and right is None and upper is None and lower is None:
+            self.cropped_image = image
+            self.left = 0
+            self.lower = 0
+            self.right = image.shape[2]  # width
+            self.upper = image.shape[1]  # height
+        else:
+            self.cropped_image = image[:, lower:upper, left:right]
+            self.left = left
+            self.upper = upper
+            self.right = right
+            self.lower = lower
+
+        self.width = self.cropped_image.shape[2]
+        self.height = self.cropped_image.shape[1]
+
+        self.horizontal_center = (self.left + self.right) / 2
+        self.vertical_center = (self.lower + self.upper) / 2
+
+    def find(self, object_name: str) -> List[ImagePatch]:
+        """Returns a list of ImagePatch objects matching object_name contained in the crop if any are found.
+        Otherwise, returns an empty list.
+        Parameters
+        ----------
+        object_name : str
+            the name of the object to be found
+
+        Returns
+        -------
+        List[ImagePatch]
+            a list of ImagePatch objects matching object_name contained in the crop
+
+        Examples
+        --------
+        >>> # return the foo
+        >>> def execute_command(image) -> List[ImagePatch]:
+        >>>     image_patch = ImagePatch(image)
+        >>>     foo_patches = image_patch.find("foo")
+        >>>     return foo_patches
+        """
+        return find_in_image(self.cropped_image, object_name)
+
+    def exists(self, object_name: str) -> bool:
+        """Returns True if the object specified by object_name is found in the image, and False otherwise.
+        Parameters
+        -------
+        object_name : str
+            A string describing the name of the object to be found in the image.
+
+        Examples
+        -------
+        >>> # Are there both foos and garply bars in the photo?
+        >>> def execute_command(image)->str:
+        >>>     image_patch = ImagePatch(image)
+        >>>     is_foo = image_patch.exists("foo")
+        >>>     is_garply_bar = image_patch.exists("garply bar")
+        >>>     return bool_to_yesno(is_foo and is_garply_bar)
+        """
+        return len(self.find(object_name)) > 0
+
+    def best_text_match(self, option_list: List[str], prefix: str=None) -> str:
+        """Returns the string that best matches the image.
+        Parameters
+        -------
+        option_list : str
+            A list with the names of the different options
+        prefix : str
+            A string with the prefixes to append to the options
+
+        Examples
+        -------
+        >>> # Is the foo gold or white?
+        >>> def execute_command(image)->str:
+        >>>     image_patch = ImagePatch(image)
+        >>>     foo_patches = image_patch.find("foo")
+        >>>     # Question assumes one foo patch
+        >>>     return foo_patches[0].best_text_match(["gold", "white"])
+        """
+        return best_text_match(self.cropped_image, option_list, prefix)
+
+    def simple_query(self, question: str = None) -> str:
+        """Returns the answer to a basic question asked about the image. If no question is provided, returns the answer
+        to "What is this?". The questions are about basic perception, and are not meant to be used for complex reasoning
+        or external knowledge.
+        Parameters
+        -------
+        question : str
+            A string describing the question to be asked.
+
+        Examples
+        -------
+
+        >>> # What color is the foo?
+        >>> def execute_command(image) -> str:
+        >>>     image_patch = ImagePatch(image)
+        >>>     foo_patches = image_patch.find("foo")
+        >>>     foo_patch = foo_patches[0]
+        >>>     return foo_patch.simple_query("What is the color?")
+
+        >>> # Is the second bar from the left quuxy?
+        >>> def execute_command(image) -> str:
+        >>>     image_patch = ImagePatch(image)
+        >>>     bar_patches = image_patch.find("bar")
+        >>>     bar_patches.sort(key=lambda x: x.horizontal_center)
+        >>>     bar_patch = bar_patches[1]
+        >>>     return bar_patch.simple_query("Is the bar quuxy?")
+        """
+        return simple_query(self.cropped_image, question)
+
+    def crop(self, left: int, lower: int, right: int, upper: int) -> ImagePatch:
+        """Returns a new ImagePatch cropped from the current ImagePatch.
+        Parameters
+        -------
+        left, lower, right, upper : int
+            The (left/lower/right/upper)most pixel of the cropped image.
+        -------
+        """
+        return ImagePatch(self.cropped_image, left, lower, right, upper)
+
+    def overlaps_with(self, left, lower, right, upper):
+        """Returns True if a crop with the given coordinates overlaps with this one,
+        else False.
+        Parameters
+        ----------
+        left, lower, right, upper : int
+            the (left/lower/right/upper) border of the crop to be checked
+
+        Returns
+        -------
+        bool
+            True if a crop with the given coordinates overlaps with this one, else False
+
+        Examples
+        --------
+        >>> # black foo on top of the qux
+        >>> def execute_command(image) -> ImagePatch:
+        >>>     image_patch = ImagePatch(image)
+        >>>     qux_patches = image_patch.find("qux")
+        >>>     qux_patch = qux_patches[0]
+        >>>     foo_patches = image_patch.find("black foo")
+        >>>     for foo in foo_patches:
+        >>>         if foo.vertical_center > qux_patch.vertical_center
+        >>>             return foo
+        """
+        return self.left <= right and self.right >= left and self.lower <= upper and self.upper >= lower
+
+
+def best_image_match(list_patches: List[ImagePatch], content: List[str], return_index=False) -> Union[ImagePatch, int]:
+    """Returns the patch most likely to contain the content.
+    Parameters
+    ----------
+    list_patches : List[ImagePatch]
+    content : List[str]
+        the object of interest
+    return_index : bool
+        if True, returns the index of the patch most likely to contain the object
+
+    Returns
+    -------
+    int
+        Patch most likely to contain the object
+    """
+    return best_image_match(list_patches, content, return_index)
+
+
+def distance(patch_a: ImagePatch, patch_b: ImagePatch) -> float:
+    """
+    Returns the distance between the edges of two ImagePatches. If the patches overlap, it returns a negative distance
+    corresponding to the negative intersection over union.
+
+    Parameters
+    ----------
+    patch_a : ImagePatch
+    patch_b : ImagePatch
+
+    Examples
+    --------
+    # Return the qux that is closest to the foo
+    >>> def execute_command(image):
+    >>>     image_patch = ImagePatch(image)
+    >>>     qux_patches = image_patch.find('qux')
+    >>>     foo_patches = image_patch.find('foo')
+    >>>     foo_patch = foo_patches[0]
+    >>>     qux_patches.sort(key=lambda x: distance(x, foo_patch))
+    >>>     return qux_patches[0]
+    """
+    return distance(patch_a, patch_b)
+
+
+def bool_to_yesno(bool_answer: bool) -> str:
+    return "yes" if bool_answer else "no"
+
+
+def coerce_to_numeric(string):
+    """
+    This function takes a string as input and returns a float after removing any non-numeric characters.
+    If the input string contains a range (e.g. "10-15"), it returns the first value in the range.
+    """
+    return coerce_to_numeric(string)
+
+
+class VideoSegment:
+    """A Python class containing a set of frames represented as ImagePatch objects, as well as relevant information.
+    Attributes
+    ----------
+    video : torch.Tensor
+        A tensor of the original video.
+    start : int
+        An int describing the starting frame in this video segment with respect to the original video.
+    end : int
+        An int describing the ending frame in this video segment with respect to the original video.
+    num_frames->int
+        An int containing the number of frames in the video segment.
+
+    Methods
+    -------
+    frame_iterator->Iterator[ImagePatch]
+    trim(start, end)->VideoSegment
+        Returns a new VideoSegment containing a trimmed version of the original video at the [start, end] segment.
+    frame_iterator->Iterator[ImagePatch]
+        Returns an iterator over the frames in the video segment.
+    """
+
+    def __init__(self, video: torch.Tensor, start: int = None, end: int = None, parent_start=0, queues=None):
+        """Initializes a VideoSegment object by trimming the video at the given [start, end] times and stores the
+        start and end times as attributes. If no times are provided, the video is left unmodified, and the times are
+        set to the beginning and end of the video.
+
+        Parameters
+        -------
+        video : torch.Tensor
+            A tensor of the original video.
+        start : int
+            An int describing the starting frame in this video segment with respect to the original video.
+        end : int
+            An int describing the ending frame in this video segment with respect to the original video.
+        """
+
+        if start is None and end is None:
+            self.trimmed_video = video
+            self.start = 0
+            self.end = video.shape[0]  # duration
+        else:
+            self.trimmed_video = video[start:end]
+            if start is None:
+                start = 0
+            if end is None:
+                end = video.shape[0]
+            self.start = start + parent_start
+            self.end = end + parent_start
+
+        self.num_frames = self.trimmed_video.shape[0]
+
+    def frame_from_index(self, index) -> ImagePatch:
+        """Returns the frame at position 'index', as an ImagePatch object.
+
+        Examples
+        -------
+        >>> # Is there a foo in the frame bar appears?
+        >>> def execute_command(video)->bool:
+        >>>     video_segment = VideoSegment(video)
+        >>>     for i, frame in enumerate(video_segment.frame_iterator()):
+        >>>         if frame.exists("bar"):
+        >>>             frame_after = video_segment.frame_from_index(i+1)
+        >>>             return frame_after.exists("foo")
+        """
+        return ImagePatch(self.trimmed_video[index])
+
+    def trim(self, start: Union[int, None] = None, end: Union[int, None] = None) -> VideoSegment:
+        """Returns a new VideoSegment containing a trimmed version of the original video at the [start, end]
+        segment.
+
+        Parameters
+        ----------
+        start : Union[int, None]
+            An int describing the starting frame in this video segment with respect to the original video.
+        end : Union[int, None]
+            An int describing the ending frame in this video segment with respect to the original video.
+
+        Examples
+        --------
+        >>> # Return the second half of the video
+        >>> def execute_command(video):
+        >>>     video_segment = VideoSegment(video)
+        >>>     video_second_half = video_segment.trim(video_segment.num_frames // 2, video_segment.num_frames)
+        >>>     return video_second_half
+        """
+        if start is not None:
+            start = max(start, 0)
+        if end is not None:
+            end = min(end, self.num_frames)
+
+        return VideoSegment(self.trimmed_video, start, end, self.start)
+
+    def select_answer(self, info: dict, question: str, options: List[str]) -> str:
+        return select_answer(self.trimmed_video, info, question, options)
+
+    def frame_iterator(self) -> Iterator[ImagePatch]:
+        """Returns an iterator over the frames in the video segment.
+
+        Examples
+        -------
+        >>> # Return the frame when the kid kisses the cat
+        >>> def execute_command(video):
+        >>>     video_segment = VideoSegment(video)
+        >>>     for i, frame in enumerate(video_segment.frame_iterator()):
+        >>>         if frame.exists("kid") and frame.exists("cat") and frame.simple_query("Is the kid kissing the cat?") == "yes":
+        >>>             return frame
+        """
+        for i in range(self.num_frames):
+            yield self.frame_from_index(i)
+
+
+# Examples of how to use the API
+
+# how many cats are there in the video
+# possible answers: ['one', 'two', 'three', 'four', 'five']
+def execute_command(video, possible_answers, query)->[str, dict]:
+    video_segment = VideoSegment(video)
+    # Count the number of cats in the video
+    num_cats_all_frames = []
+    for i, frame in enumerate(video_segment.frame_iterator()):
+        num_cats_frame = len(frame.find("cat"))
+        num_cats_all_frames.append(num_cats_frame)
+    num_cats = np.round(np.percentile(num_cats_all_frames, 90))
+    # Create the info dictionary
+    info = {"Number of cats": num_cats}
+    # Answer the query
+    answer = video_segment.select_answer(info, query, possible_answers)
+    return answer
+
+
+# where is the video taking place
+# possible answers: ['road', 'house', 'dog', 'dining room', 'street']
+def execute_command(video, possible_answers, query)->[str, dict]:
+    video_segment = VideoSegment(video)
+    frame_of_interest = video_segment.frame_from_index(video_segment.num_frames // 2)
+    # Caption the frame
+    caption = frame_of_interest.simple_query("What is in the frame?")
+    # Find the location, among the provided options (the location is what we want to answer)
+    location_detected = frame_of_interest.best_text_match(option_list=possible_answers)
+    # Create the info dictionary
+    info = {
+        "Caption of middle frame": caption,
+        "Location detected": location_detected
+    }
+    # Answer the query
+    answer = video_segment.select_answer(info, query, possible_answers)
+    return answer
+
+
+# how is the man feeling after standing up from the chair
+# possible answers: ['happy', 'sad', 'angry', 'neutral', 'surprised']
+def execute_command(video, possible_answers, query)->[str, dict]:
+    # Reason every step
+    video_segment = VideoSegment(video)
+    man_finished_standing = False
+    man_not_standing = False
+    for i, frame in enumerate(video_segment.frame_iterator()):
+        condition = frame.exists("man") and frame.simple_query("Is the man standing up?") == "yes"
+        if condition and man_not_standing:
+            # Detect the moment where the man stands up
+            man_finished_standing = True
+            break
+        else:
+            man_not_standing = True
+    if man_finished_standing:
+        index_frame = i + 1  # Because of the "after" in the question
+    else:
+        index_frame = video_segment.num_frames // 2
+    frame_of_interest = video_segment.frame_from_index(index_frame)
+    man_patches = frame_of_interest.find("man")
+    if len(man_patches) == 0:
+        man_patches = [frame_of_interest]
+    man_patch = man_patches[0]
+    # Caption the crop
+    caption = man_patch.simple_query("How is the man feeling?")
+    # Classify the emotion among the provided options
+    emotion_detected = man_patch.best_text_match(prefix="man", option_list=possible_answers)
+    # Create the info dictionary
+    info = {
+        "Description of the man after standing up": caption,
+        "Emotion detected": emotion_detected
+    }
+    # Answer the query
+    answer = video_segment.select_answer(info, query, possible_answers)
+    return answer
+
+
+# what is the man beside the table holding in his hand while speaking to the woman
+# possible_answers = ['phone', 'book', 'cup', 'bottle', 'bag']
+def execute_command(video, possible_answers, query)->[str, dict]:
+    video_segment = VideoSegment(video)
+    frame_of_interest = None
+    for i, frame in enumerate(video_segment.frame_iterator()):
+        if frame.exists("man") and frame.exists("woman") and \
+                frame.simple_query("Is there a man speaking to a woman") == "yes":
+            frame_of_interest = frame  # Note the "while" in the question
+            break
+    if frame_of_interest is None:
+        # Select frame at the middle of the video, as no temporal info is available
+        frame_of_interest = video_segment.frame_from_index(video_segment.num_frames // 2)
+    # Caption the frame
+    caption = frame_of_interest.simple_query("What is in the frame?")
+    objects_look_for = possible_answers
+    detected_objects = [object_name for object_name in objects_look_for if frame_of_interest.exists(object_name)]
+    not_found = list(set(objects_look_for) - set(detected_objects))
+    man_patches = frame_of_interest.find("man")
+    if len(man_patches) == 0:
+        man_patch = frame_of_interest
+    else:
+        man_patch = man_patches[0]  # Man closest to the table
+    object_holding = man_patch.simple_query("What is the man holding?")
+    # Create the info dictionary
+    info = {
+        "Caption of frame while speaking to woman": caption,
+        "Object man holding": object_holding,
+        "Objects in the image": f'found: {detected_objects}, not found: {not_found})'
+    }
+    # Answer the query
+    answer = video_segment.select_answer(info, query, possible_answers)
+    return answer
+
+
+# why are the little girls and boys posing after dancing
+# possible answers: ['to take a picture', 'to jump', 'scared', 'they are friends', 'to eat cake]
+def execute_command(video, possible_answers, query)->[str, dict]:
+    video_segment = VideoSegment(video)
+    # Find the frame where the girls and boys finish dancing
+    dance_started = False
+    frame_of_interest = None
+    for i, frame in enumerate(video_segment.frame_iterator()):
+        if frame.exists("girl") and frame.exists("boy") and frame.simple_query("are the girls dancing?") == "yes":
+            dance_started = True
+        elif dance_started:
+            # The dance started before and just finished. Note the "after" in the question
+            frame_of_interest = frame
+            break
+    if frame_of_interest is None:
+        # Describe middle frame
+        frame_of_interest = video_segment.frame_from_index(video_segment.num_frames // 2)
+    # Caption frame of interest
+    description = frame_of_interest.simple_query("What is in the frame?")
+    # It is convenient to know if some objects are in the image
+    objects_look_for = ['camera', 'cake']
+    detected_objects = [object_name for object_name in objects_look_for if frame_of_interest.exists(object_name)]
+    not_found = list(set(objects_look_for) - set(detected_objects))
+    # Create the info dictionary
+    info = {
+        "Description of frame after dancing": description,
+        "Objects in the image": f'found: {detected_objects}, not found: {not_found})'
+    }
+    # Answer the query
+    answer = video_segment.select_answer(info, query, possible_answers)
+    return answer
+
+
+# how does the kid get the ball at the beginning
+# possible answers: ['with his hand', 'kicks it', 'run to fetch it', 'looks at the baby', 'happy']
+def execute_command(video, possible_answers, query)->[str, dict]:
+    video_segment = VideoSegment(video)
+    video_segment = video_segment.trim(0, 5)  # Trim the video to the first 5 seconds ("at the beginning")
+    # detect when the kid gets the ball
+    frame_of_interest = None
+    for i, frame in enumerate(video_segment.frame_iterator()):
+        if frame.exists("ball") and frame.exists("kid") and \
+                frame.simple_query("is the kid getting the ball?") == "yes":
+            frame_of_interest = frame
+            break
+    if frame_of_interest is None:
+        frame_of_interest = video_segment.frame_from_index(video_segment.num_frames // 2)
+    # Get more information about the action
+    info_action = frame_of_interest.simple_query("What is the kid doing: holding the ball, kicking it, or fetching it?")
+    # Create the info dictionary
+    info = {
+        "Info about the kid getting the ball": info_action,
+    }
+    # Answer the query
+    answer = video_segment.select_answer(info, query, possible_answers)
+    return answer
+
+
+# what did the hen do after the chicks wandered off
+# possible answers: ['moves the food in her hand', 'eat the corn', 'lay down on the straw', 'flip onto back', 'look around']
+def execute_command(video, possible_answers, query)->[str, dict]:
+    video_segment = VideoSegment(video)
+    # detect when the chicks wander off
+    wander_detected = False
+    for i, frame in enumerate(video_segment.frame_iterator()):
+        chicks = frame.find("chick")
+        if len(chicks) == 0:
+            continue
+        else:
+            if any([chick.simple_query("Is the chick wandering") == "yes" for chick in chicks]):
+                wander_detected = True
+                break
+    if wander_detected:
+        index_frame = i + 1  # Note the "after" in the question
+    else:
+        index_frame = video_segment.num_frames // 2
+    frame_of_interest = video_segment.frame_from_index(index_frame)
+    hens = frame_of_interest.find("hen")
+    if len(hens) == 0:
+        hens = [frame_of_interest]
+    hen = hens[0]
+    # Caption the crop
+    caption = hen.simple_query("What is the hen doing?")
+    # It is convenient to know if some objects are in the image
+    objects_look_for = ['straw', 'corn']
+    detected_objects = [object_name for object_name in objects_look_for if frame_of_interest.exists(object_name)]
+    not_found = list(set(objects_look_for) - set(detected_objects))
+    # Create the info dictionary
+    info = {
+        "Caption of hen in the frame after the chicks wander off": caption,
+        "Objects in the image": f'found: {detected_objects}, not found: {not_found})',
+    }
+    # Answer the query
+    answer = video_segment.select_answer(info, query, possible_answers)
+    return answer
+
+
+# why does the man with a red hat put his arm down at the end of the video
+# possible answers: ['watching television', 'searching for food', 'move its head', 'looking over cardboard box', 'looks at the camera']
+def execute_command(video, possible_answers, query)->[str, dict]:
+    video_segment = VideoSegment(video)
+    # Caption last frame of the video (end of video)
+    last_frame = video_segment.frame_from_index(-1)
+    last_caption = last_frame.simple_query("What is in the frame?")
+    men = last_frame.find("man")
+    if len(men) == 0:
+        men = [last_frame]
+    man = men[0]
+    man_action = man.simple_query("What is the man doing?")
+    # Create the info dictionary
+    info = {
+        "Caption of last frame": last_caption,
+        "Man looks like he is doing": man_action
+    }
+    # Answer the query
+    answer = video_segment.select_answer(info, query, possible_answers)
+    return answer
+
+
+# INSERT_QUERY_HERE
+# possible answers: EXTRA_CONTEXT_HERE
+def execute_command(INSERT_TYPE_HERE):

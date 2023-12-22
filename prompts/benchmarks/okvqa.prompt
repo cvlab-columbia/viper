@@ -1,0 +1,145 @@
+from PIL import Image
+from vision_functions import obtain_query_response_from_image
+from nlp_functions import llm_query, process_guesses
+
+def llm_query(question: str)->str:
+    '''Answers a text question using GPT-3. The input question is always a formatted string with a variable in it.
+    
+    Parameters
+    ----------
+    question: str
+        the text question to ask. Must not contain any reference to 'the image' or 'the photo', etc.
+    '''
+    return llm_query(question)
+
+def process_guesses(question: str, guesses: List[str])->str:
+    '''Processes a list of guesses for an answer to a question and returns the best answer.'''
+    return process_guesses(question, guesses)
+
+class ImagePatch:
+    def __init__(self, image, left: int=None, lower: int=None, right: int=None, upper: int=None):
+        if left is None and right is None and upper is None and lower is None:
+            self.cropped_image = image
+            self.left = 0
+            self.lower = 0
+            self.right = image.shape[2]
+            self.upper = image.shape[1]
+        else:
+            self.cropped_image = image[:, lower:upper, left:right]
+            self.left = left
+            self.lower = lower
+            self.right = right
+            self.upper = upper
+
+        self.width = self.cropped_image.shape[2]
+        self.height = self.cropped_image.shape[1]
+    
+    def simple_query(self, query: str):
+        """Answer basic queries about the image patch. 
+        Parameters
+        ----------
+        query: str
+            the simple query about the image patch in the form of a question
+        
+        Returns
+        -------
+        str
+            a guess for the answer to the question
+        """
+        answer = obtain_query_response_from_image(self.cropped_image, query)
+        return answer
+    
+# Examples of using the ImagePatch class
+
+# What kind of flowers are these?
+def execute_command(image)->str:
+    # The question is direct perception, so we can just ask the image
+    # There is no additional information needed.
+    image = ImagePatch(image)
+    direct_guess = image.simple_query("What kind of flowers are these?")
+    return direct_guess
+
+# What do these people on the bikes normally write and give out?
+def execute_command(image)->str:
+    # The question is not direct perception, so we need to ask the image for more information
+    # What information do we need? We need to know who these people on the bikes are.
+    image = ImagePatch(image)
+    guesses = []
+    people_on_bikes = image.simple_query("Who are these people on the bikes?")
+    external_knowledge_query = "What do {} normally write and give out?".format(people_on_bikes)
+    step_by_step_guess = llm_query(external_knowledge_query)
+    guesses.append("these people on the bikes are {}".format(people_on_bikes) + ", so " + step_by_step_guess)
+    direct_guess = image.simple_query("What do these people on the bikes normally write and give out?")
+    guesses.append(direct_guess)
+    return process_guesses("What do these people on the bikes normally write and give out?", guesses)
+
+# What are these children doing?
+def execute_command(image)->str:
+    # The question is direct perception, so we can just ask the image
+    # Salient information: what are these children doing?
+    image = ImagePatch(image)
+    direct_guess = image.simple_query("What are these children watching?")
+    return direct_guess
+
+# Is this the mountains or desert?
+def execute_command(image)->str:
+    # The question is not direct perception, so we need to ask the image for more information
+    # Salient information: is this the mountains? is this the desert?
+    # Question contains "or", so the answer must be "mountains" or "desert"
+    image = ImagePatch(image)
+    guesses = []
+    mountains = image.simple_query("Is this the mountains?")
+    desert = image.simple_query("Is this the desert?")
+    if mountains == "yes":
+        guesses.append("this is the mountains")
+    if desert == "yes":
+        guesses.append("this is the desert")
+    direct_guess = image.simple_query("Is this the mountains or desert?")
+    guesses.append(direct_guess)
+    return process_guesses("Is this the mountains or desert?", guesses)
+
+# Who is famous for allegedly doing this in a lightning storm?
+def execute_command(image)->str:
+    # The question is not direct perception, so we need to ask the image for more information
+    # Salient information: what is being done?
+    image = ImagePatch(image)
+    guesses = []
+    action = image.simple_query("What is being done?")
+    external_knowledge_query = "Who is famous for allegedly {} in a lightning storm?".format(action)
+    step_by_step_guess = llm_query(external_knowledge_query)
+    guesses.append("what is being done is {}".format(action) + ", so " + step_by_step_guess)
+    direct_guess = image.simple_query("Who is famous for allegedly doing this in a lightning storm?")
+    guesses.append(direct_guess)
+    return process_guesses("Who is famous for allegedly doing this in a lightning storm?", guesses)
+
+# Should you bake or roast this item?
+def execute_command(image)->str:
+    # The question is not direct perception, so we need to ask the image for more information
+    # Salient information: what is this item?
+    # Question contains "or", so the answer must be "bake" or "roast"
+    image = ImagePatch(image)
+    guesses = []
+    item = image.simple_query("What is this item?")
+    external_knowledge_query = "Should you bake or roast {}?".format(item)
+    step_by_step_guess = llm_query(external_knowledge_query)
+    guesses.append("what is this item is {}".format(item) + ", so " + step_by_step_guess)
+    direct_guess = image.simple_query("Should you bake or roast this item?")
+    guesses.append(direct_guess)
+    return process_guesses("Should you bake or roast this item?", guesses)
+
+# Where can I get a laptop like the one found here?
+def execute_command(image)->str:
+    # The question is not direct perception, so we need to ask the image for more information
+    # Salient information: what kind of laptop is this?
+    image = ImagePatch(image)
+    guesses = []
+    laptop_type = image.simple_query("What kind of laptop is this?")
+    external_knowledge_query = "Where can I get a {} like the one found here?".format(laptop_type)
+    step_by_step_guess = llm_query(external_knowledge_query)
+    guesses.append("what kind of laptop is this is {}".format(laptop_type) + ", so " + step_by_step_guess)
+    direct_guess = image.simple_query("Where can I get a laptop like the one found here?")
+    guesses.append(direct_guess)
+    return process_guesses("Where can I get a laptop like the one found here?", guesses)
+
+# INSERT_PROMPT_HERE
+def execute_command(image)->str:
