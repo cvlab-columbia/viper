@@ -35,6 +35,10 @@ def get_dataset(config_dataset):
     return dataset
 
 
+def all_answers_from_dict(dct):
+    return [x["answer"] for x in dct]
+
+
 def general_postprocessing(prediction):
     try:
         if type(prediction).__name__ == 'ImagePatch':
